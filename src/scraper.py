@@ -2,10 +2,11 @@ import requests
 import io
 from bs4 import BeautifulSoup
 import sys
+import re
 
 
-DOMAIN = 'http://info.kingcounty.gov/'
-SEARCH_RESULTS = 'health/ehs/foodsafety/inspections/Results.aspx'
+DOMAIN = 'http://info.kingcounty.gov'
+SEARCH_RESULTS = '/health/ehs/foodsafety/inspections/Results.aspx'
 
 QUERY_PARAMS = {
     'Output': 'W',
@@ -31,7 +32,7 @@ def get_inspection_page(**kwargs):
     """Get request to King County server for health inspection info."""
     payload = QUERY_PARAMS.copy()
     if kwargs is not None:
-        for k, v in kwargs.iteritems:
+        for k, v in kwargs.items():
             if k in QUERY_PARAMS:
                 payload[k] = v
 
@@ -56,15 +57,22 @@ def parse_source(html, encoding='utf-8'):
     return parsed
 
 
+def extract_data_listings(html):
+    id_finder = re.compile(r'PR[\d]+~')
+    return html.find_all('div', id=id_finder)
+
+
 if __name__ == '__main__':
     kwargs = {
-        'Inspection_Start': '4/1/2015',
-        'Inspection_End': '6/1/2015',
+        'Inspection_Start': '4/11/2015',
+        'Inspection_End': '4/18/2015',
         'Zip_Code': '98121',
     }
     if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        html, encoding = load_inspection_page('src/inspection_page.html')
+        html, encoding = load_inspection_page('inspection_page.html')
     else:
         html, encoding = get_inspection_page(**kwargs)
         doc = parse_source(html, encoding)
-        print doc.prettify(encoding=encoding)
+        listings = extract_data_listings(doc)
+        print(len(listings))
+        print(listings[0].prettify())
