@@ -135,7 +135,7 @@ def extract_score_data(elem):
         return data
 
 
-def generate_results(test=False):
+def generate_results(test=False, count=10):
     """Generate metadata results for listings."""
     kwargs = {
         'Inspection_Start': '4/11/2015',
@@ -148,7 +148,7 @@ def generate_results(test=False):
         html, encoding = get_inspection_page(**kwargs)
         doc = parse_source(html, encoding)
         listings = extract_data_listings(doc)
-    for listing in listings:
+    for listing in listings[:count]:
         metadata = extract_restraunt_metadata(listing)
         score_data = extract_score_data(listing)
         metadata.update(score_data)
@@ -157,12 +157,28 @@ def generate_results(test=False):
 
 def get_geojson(result):
     """Get geocoding data from google using restaurant address.
-    Return geojson respresentation of data."""
+    Return modified geojson respresentation of data."""
     address = " ".join(result.get('Address', ''))
     if not address:
         return None
     geocoded = geocoder.google(address)
-    return geocoded.geojson
+    geojson = geocoded.geojson
+    inspection_data = {}
+    use_keys = (
+        'Business Name', 'Average Score', 'Total Inspections', 'High Score',
+        'Address',
+    )
+    for k, v in result.items():
+        if k not in use_keys:
+            continue
+        if isinstance(v, list):
+            v = " ".join(v)
+        inspection_data[k] = v
+        new_address = geojson['properties'].get('address')
+        if new_address:
+            inspection_data['Address'] = new_address
+        geojson['properties'] = inspection_data
+    return geojson
 
 
 if __name__ == '__main__':
