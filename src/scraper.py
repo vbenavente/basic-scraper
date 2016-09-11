@@ -4,10 +4,8 @@ from bs4 import BeautifulSoup
 import sys
 import re
 
-
 DOMAIN = 'http://info.kingcounty.gov'
 SEARCH_RESULTS = '/health/ehs/foodsafety/inspections/Results.aspx'
-
 QUERY_PARAMS = {
     'Output': 'W',
     'Business_Name': '',
@@ -58,8 +56,26 @@ def parse_source(html, encoding='utf-8'):
 
 
 def extract_data_listings(html):
+    """Finds container nodes for restaurant listings."""
     id_finder = re.compile(r'PR[\d]+~')
     return html.find_all('div', id=id_finder)
+
+
+def has_two_tds(elem):
+    """Returns True if element passes filter and False if not."""
+    is_tr = elem.name == 'tr'
+    td_children = elem.find_all('td', recursive=False)
+    has_two = len(td_children) == 2
+    return is_tr and has_two
+
+
+def clean_data(td):
+    """Returns tag.string with extra characters stripped."""
+    data = td.string
+    try:
+        return data.strip("\n:-")
+    except AttributeError:
+        return u""
 
 
 if __name__ == '__main__':
@@ -74,5 +90,10 @@ if __name__ == '__main__':
         html, encoding = get_inspection_page(**kwargs)
         doc = parse_source(html, encoding)
         listings = extract_data_listings(doc)
-        print(len(listings))
-        print(listings[0].prettify())
+        for listing in listings[:5]:
+            metadata_rows = listing.find('tbody').find_all(
+                has_two_tds, recursive=False
+            )
+            for row in metadata_rows:
+                for td in row.find_all('td', recursive=False):
+                    print(repr(clean_data(td)))
