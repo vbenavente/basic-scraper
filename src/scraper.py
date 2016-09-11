@@ -145,7 +145,7 @@ if __name__ == '__main__':
         html, encoding = get_inspection_page(**kwargs)
         doc = parse_source(html, encoding)
         listings = extract_data_listings(doc)
-        for listing in listings[:5]:
-            metadata = extract_restraunt_metadata(listing)
-            score_data = extract_score_data(listing)
-            print(score_data)
+    for listing in listings[:5]:
+        metadata = extract_restraunt_metadata(listing)
+        score_data = extract_score_data(listing)
+        print(score_data)
