@@ -3,6 +3,8 @@ import io
 from bs4 import BeautifulSoup
 import sys
 import re
+import geocoder
+import pprint
 
 DOMAIN = 'http://info.kingcounty.gov'
 SEARCH_RESULTS = '/health/ehs/foodsafety/inspections/Results.aspx'
@@ -134,6 +136,7 @@ def extract_score_data(elem):
 
 
 def generate_results(test=False):
+    """Generate metadata results for listings."""
     kwargs = {
         'Inspection_Start': '4/11/2015',
         'Inspection_End': '4/18/2015',
@@ -152,7 +155,18 @@ def generate_results(test=False):
         yield metadata
 
 
+def get_geojson(result):
+    """Get geocoding data from google using restaurant address.
+    Return geojson respresentation of data."""
+    address = " ".join(result.get('Address', ''))
+    if not address:
+        return None
+    geocoded = geocoder.google(address)
+    return geocoded.geojson
+
+
 if __name__ == '__main__':
     test = len(sys.argv) > 1 and sys.argv[1] == 'test'
     for result in generate_results(test):
-        print(result)
+        geo_result = get_geojson(result)
+        pprint.pprint(geo_result)
